@@ -1,4 +1,4 @@
-host 7041-web-01
+Host 7041-web-01
         Hostname 44.202.15.247
         User ubuntu
         Identityfile ~/.ssh/school
