@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Configures nginx with a custom 404 page
+apt-get update -y
+apt-get install -y nginx
+
+cat > /var/www/html/index.html << 'EOF'
+Holberton School for the win!
+EOF
+
+cat > /var/www/html/404.html << 'EOF'
+Ceci n'est pas une page
+EOF
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/html;
+    index index.html index.htm;
+
+    server_name _;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
+}
+EOF
+
+service nginx restart
