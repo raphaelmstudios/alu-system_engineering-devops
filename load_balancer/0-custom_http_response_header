@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Configures Nginx with a custom X-Served-By header on Ubuntu 16.04
+
+apt-get update -y
+apt-get install -y nginx
+
+if [ -n "$1" ]; then
+  hostnamectl set-hostname "$1"
+fi
+
+# Add X-Served-By header if not already present
+if ! grep -q "X-Served-By" /etc/nginx/nginx.conf; then
+  sed -i '/http {/a \    add_header X-Served-By $hostname;' /etc/nginx/nginx.conf
+fi
+
+echo "Hello from $(hostname)" > /var/www/html/index.html
+
+service nginx restart
