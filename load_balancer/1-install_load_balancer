@@ -1,37 +1,14 @@
 #!/usr/bin/env bash
 # Install and configure HAproxy load balancer with roundrobin algorithm
 
-# Update package list and install HAproxy
 apt-get update -y
 apt-get install -y haproxy
 
-# Write a clean HAproxy configuration (overwrite, don't append)
-cat > /etc/haproxy/haproxy.cfg << 'EOF'
-global
-    log /dev/log local0
-    log /dev/log local1 notice
-    chroot /var/lib/haproxy
-    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
-    stats timeout 30s
-    user haproxy
-    group haproxy
-    daemon
+# Remove any existing frontend/backend blocks to avoid duplicates
+sed -i '/^frontend/,$ d' /etc/haproxy/haproxy.cfg
 
-defaults
-    log global
-    mode http
-    option httplog
-    option dontlognull
-    timeout connect 5000
-    timeout client  50000
-    timeout server  50000
-    errorfile 400 /etc/haproxy/errors/400.http
-    errorfile 403 /etc/haproxy/errors/403.http
-    errorfile 408 /etc/haproxy/errors/408.http
-    errorfile 500 /etc/haproxy/errors/500.http
-    errorfile 502 /etc/haproxy/errors/502.http
-    errorfile 503 /etc/haproxy/errors/503.http
-    errorfile 504 /etc/haproxy/errors/504.http
+# Append frontend and backend config
+cat >> /etc/haproxy/haproxy.cfg << 'EOF'
 
 frontend http_front
     bind *:80
@@ -41,12 +18,15 @@ frontend http_front
 backend http_back
     balance roundrobin
     mode http
+    option forwardfor
+    option http-server-close
     server 7041-web-01 18.234.240.227:80 check
     server 7041-web-02 44.204.30.8:80 check
 EOF
 
-# Enable HAproxy to be managed via init script
-echo "ENABLED=1" > /etc/default/haproxy
+# Enable HAproxy init script management
+sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
 
-# Restart HAproxy
+# Validate and restart
+haproxy -c -f /etc/haproxy/haproxy.cfg
 service haproxy restart
